@@ -1,0 +1,24 @@
+{
+  "name": "maca",
+  "version": "0.0.1",
+  "description": "Multi-user Application Control Arbitor",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Isaachristian/MACA.git"
+  },
+  "keywords": [
+    "web",
+    "typescript",
+    "http"
+  ],
+  "author": "Isaac Liljeros",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Isaachristian/MACA/issues"
+  },
+  "homepage": "https://github.com/Isaachristian/MACA#readme"
+}
