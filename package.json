@@ -20,5 +20,10 @@
   "bugs": {
     "url": "https://github.com/Isaachristian/MACA/issues"
   },
-  "homepage": "https://github.com/Isaachristian/MACA#readme"
+  "homepage": "https://github.com/Isaachristian/MACA#readme",
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^22.15.18",
+    "typescript": "^5.8.3"
+  }
 }
