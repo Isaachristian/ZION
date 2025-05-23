@@ -18,7 +18,7 @@
 	"javascript": {
 		"formatter": {
 			"semicolons": "asNeeded",
-      "lineWidth": 80
+			"lineWidth": 80
 		}
 	},
 	"organizeImports": {
@@ -28,15 +28,18 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-      "style": {
-        "useImportType": {
-          "level": "error",
-          "fix": "safe"
-        }
-      },
-      "correctness": {
-        "noUnusedImports": "error"
-      }
+			"style": {
+				"useImportType": {
+					"level": "error",
+					"fix": "safe"
+				}
+			},
+			"correctness": {
+				"noUnusedImports": {
+					"level": "error",
+					"fix": "safe"
+				}
+			}
 		}
 	}
 }
