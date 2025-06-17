@@ -7,11 +7,17 @@ import {
 } from "node:http"
 import type { Config } from "./types/Config.ts"
 
+type RequestData = {
+	ongoing: number
+	calls: number
+	lastCall: number
+}
+
 export class ProxyServer {
 	private readonly config: Config
 	private readonly server: Server
 
-	private openRequestList: Map<string, number> = new Map()
+	private openRequestList: Map<string, RequestData> = new Map()
 
 	constructor(config: Config) {
 		this.config = config
@@ -22,7 +28,8 @@ export class ProxyServer {
 	public run(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			this.server.listen(this.config.listenPort, () => {
-				console.info(`Proxy running on port ${this.config.listenPort}`)
+				// console.info(`Proxy running on port ${this.config.listenPort}`)
+				this.displayState()
 
 				process.on("SIGINT", () => {
 					console.info("\n\nGracefully shutting server down...\n\n")
@@ -37,9 +44,6 @@ export class ProxyServer {
 	 * Forwards all requests from the client to the server; this must be a higher
 	 * order function or else "this" refers to createServer (where this method is
 	 * called)
-	 *
-	 * @param req The incoming request from the client
-	 * @param res The responce sent back to the client
 	 */
 	private requestListener = (req: IncomingMessage, res: ServerResponse) => {
 		if (req.url) this.addRequest(req.url)
@@ -81,24 +85,84 @@ export class ProxyServer {
 	}
 
 	private addRequest(url: string) {
-		this.openRequestList.set(url, (this.openRequestList.get(url) || 0) + 1)
+		const stats = this.openRequestList.get(url)
 
-		console.info("open requests:", [
-			...this.openRequestList
-				.entries()
-				.filter(([_, count]) => count > 0)
-				.map(([url, count]) => `${url}: ${count}`),
-		])
+		this.openRequestList.set(url, {
+			ongoing: (stats?.ongoing || 0) + 1,
+			calls: (stats?.calls || 0) + 1,
+			lastCall: Date.now(),
+		})
+
+		this.displayState()
+		// console.info("open requests:", [
+		// 	...this.openRequestList
+		// 		.entries()
+		// 		.filter(([_, count]) => count > 0)
+		// 		.map(([url, count]) => `${url}: ${count}`),
+		// ])
 	}
 
 	private removeRequest(url: string) {
-		this.openRequestList.set(url, (this.openRequestList.get(url) || 0) - 1)
+		const stats = this.openRequestList.get(url)
 
-		console.info("open requests:", [
-			...this.openRequestList
-				.entries()
-				.filter(([_, count]) => count > 0)
-				.map(([url, count]) => `${url}: ${count}`),
-		])
+		this.openRequestList.set(url, {
+			ongoing: (stats?.ongoing || 1) - 1,
+			calls: stats?.calls ?? 0,
+			lastCall: stats?.lastCall ?? Date.now(),
+		})
+
+		this.displayState()
+		// console.info("open requests:", [
+		// 	...this.openRequestList
+		// 		.entries()
+		// 		.filter(([_, count]) => count > 0)
+		// 		.map(([url, count]) => `${url}: ${count}`),
+		// ])
+	}
+
+	private displayState() {
+		// clear the terminal window and hide cursor
+		process.stdout.write("\x1b[2J\x1b[0;0H")
+		process.stdout.write("\x1b[?25l")
+
+		const w = process.stdout.columns
+		const h = process.stdout.rows
+
+		// top status bar
+		const d = new Date()
+		const runningMsg = `Server Running On Port ${this.config.listenPort}`
+		const lastUpdate = `Last Update: ${new Date().toLocaleString()}`
+		const spacingLen = w - runningMsg.length - lastUpdate.length
+		process.stdout.write(
+			`${runningMsg}${" ".repeat(spacingLen)}${lastUpdate}`.slice(0, w),
+		)
+
+		process.stdout.write(" \n")
+
+		// Ongoing Requests
+		const title = "Ongoing Requests"
+		const total = `${0} Total`
+		process.stdout.write(
+			`${title}${" ".repeat(w - title.length - total.length)}${total}`,
+		)
+
+		const sortedRequests = [...this.openRequestList]
+			.sort((a, b) => b[1].lastCall - a[1].lastCall)
+			// .sort((a, b) => b[1].ongoing - a[1].ongoing)
+			.slice(0, h - 4)
+
+		for (const [url, { ongoing, calls }] of sortedRequests) {
+			process.stdout.write(ongoing > 0 ? "\x1b[31m" : "\x1b[32m") // Set red
+			process.stdout.write(`\n\r - (${ongoing} | ${calls}) ${url}`.slice(0, w))
+			process.stdout.write("\x1b[0m") // Set default
+		}
+
+		if (sortedRequests.length < this.openRequestList.size) {
+			const hidden = this.openRequestList.size - sortedRequests.length
+			const text = `(${hidden} requests hidden)`
+			const space = " ".repeat(Math.round((w - text.length) / 2))
+
+			process.stdout.write(`\n\r${space}${text}${space}`.slice(0, w))
+		}
 	}
 }

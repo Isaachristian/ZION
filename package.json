@@ -4,6 +4,7 @@
 	"description": "Multi-user Application Control Arbitor",
 	"main": "src/index.ts",
 	"scripts": {
+		"dev": "node --experimental-strip-types --no-warnings --watch src/index.ts --listen-port=8081 --destination-port=5472 --destination-host=localhost --https=false --loglevel=verbose",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"repository": {
@@ -19,7 +20,7 @@
 	"homepage": "https://github.com/Isaachristian/MACA#readme",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@types/node": "^22.15.18",
+		"@types/node": "^22.15.31",
 		"typescript": "^5.8.3"
 	}
 }

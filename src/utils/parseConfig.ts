@@ -8,9 +8,9 @@ export function parseConfig(argv: string[]): Config {
 		console.error(`Invalid Usage: ${reason}`)
 		console.error(
 			// biome-ignore lint/style/useTemplate: performance is not importent here
-			`  Valid usage: ${argv.at(0)} --listen-port=<PORT>` +
+			`\n\n  Valid usage: ${argv.at(0)} --listen-port=<PORT>` +
 				" --destination-port=<PORT> --destination-host=<HOST>" +
-				" --https=<BOOLEAN>",
+				" --https=<BOOLEAN>\n\n",
 		)
 
 		exit(1)
@@ -18,6 +18,7 @@ export function parseConfig(argv: string[]): Config {
 
 	if (!argv.join(" ").includes("listen-port"))
 		fail("Should include a listen port")
+
 	if (!argv.join(" ").includes("destination-port"))
 		fail("Should include a destination port")
 

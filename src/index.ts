@@ -1,5 +1,6 @@
 import { exit } from "node:process"
 import { ProxyServer } from "./ProxyServer.ts"
+import { WebServer } from "./WebServer.ts"
 import { parseConfig } from "./utils/parseConfig.ts"
 
 async function main(argv: string[]) {
@@ -8,13 +9,9 @@ async function main(argv: string[]) {
 	)
 
 	const config = parseConfig(argv)
-
-	const proxy = new ProxyServer(config)
-	// create the web server
-
 	await Promise.all([
-		proxy.run(),
-		// todo run web server
+		new ProxyServer(config).run(),
+		new WebServer(config).run(),
 	])
 
 	return 0

@@ -38,6 +38,11 @@
 				"noUnusedImports": {
 					"level": "error",
 					"fix": "safe"
+				},
+				"useImportExtensions": {
+					"level": "error",
+					"fix": "unsafe",
+          "options": {}
 				}
 			}
 		}
