@@ -41,8 +41,8 @@
 				},
 				"useImportExtensions": {
 					"level": "error",
-					"fix": "unsafe",
-          "options": {}
+					"fix": "safe",
+					"options": {}
 				}
 			}
 		}

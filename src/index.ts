@@ -2,15 +2,16 @@ import { exit } from "node:process"
 import { ProxyServer } from "./ProxyServer.ts"
 import { WebServer } from "./WebServer.ts"
 import { parseConfig } from "./utils/parseConfig.ts"
+import { Logger } from "./Logger.ts"
+import { Display } from "./Display.ts"
 
 async function main(argv: string[]) {
-	process.on("uncaughtException", (err) =>
-		console.error("Uncaught Exception:", err),
-	)
-
 	const config = parseConfig(argv)
+	const logger = new Logger(config.loglevel)
+	const display = new Display(config)
+
 	await Promise.all([
-		new ProxyServer(config).run(),
+		new ProxyServer(config, logger, display).run(),
 		new WebServer(config).run(),
 	])
 

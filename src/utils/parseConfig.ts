@@ -1,5 +1,6 @@
 import { exit } from "node:process"
 import { type Config, initConfig } from "../types/Config.ts"
+import type { LogLevel } from "../LogLevel.ts"
 
 export function parseConfig(argv: string[]): Config {
 	const config = { ...initConfig }
@@ -23,7 +24,7 @@ export function parseConfig(argv: string[]): Config {
 		fail("Should include a destination port")
 
 	for (const arg of argv.slice(1)) {
-		if (!arg.startsWith("--")) fail("Unrecognized argument")
+		if (!arg.startsWith("--")) fail(`Unrecognized argument: ${arg}`)
 
 		const [key, value] = arg.substring(2).split("=")
 		if (!value) continue
@@ -43,10 +44,27 @@ export function parseConfig(argv: string[]): Config {
 			case "https":
 				config.https = value.toLowerCase() === "true"
 				break
+			case "loglevel":
+				config.loglevel = getLogLevel(value)
+				break
 			default:
+				fail(`Unrecognized argument: ${arg}`)
 				break
 		}
 	}
 
 	return config
+}
+
+function getLogLevel(value: string): LogLevel {
+	switch (value.toLowerCase()) {
+		case "error":
+			return "Error"
+		case "log":
+			return "Log"
+		case "info":
+			return "Info"
+		default:
+			return "Log"
+	}
 }

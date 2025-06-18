@@ -1,9 +1,11 @@
+import type { LogLevel } from "../LogLevel.ts"
+
 export type Config = {
 	https: boolean
 	listenPort: number
 	destinationPort: number
 	destinationHost: string
-	loglevel: "normal" | "verbose"
+	loglevel: LogLevel
 }
 
 export const initConfig: Config = {
@@ -11,5 +13,5 @@ export const initConfig: Config = {
 	listenPort: 0,
 	destinationPort: 0,
 	destinationHost: "localhost",
-	loglevel: "normal",
+	loglevel: "Log",
 } as const
