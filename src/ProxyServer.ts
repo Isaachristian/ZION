@@ -31,11 +31,11 @@ export class ProxyServer {
 	public run(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			this.server.listen(this.config.listenPort, () => {
-				// console.info(`Proxy running on port ${this.config.listenPort}`)
-				this.display.refresh(this.openRequestList)
+				this.display.refresh()
 
 				process.on("SIGINT", () => {
-					console.info("\n\nGracefully shutting server down...\n\n")
+					this.logger.info("\n\nGracefully shutting server down...\n\n")
+
 					this.server.closeAllConnections()
 					this.server.close((err) => (err ? reject(err) : resolve()))
 				})
