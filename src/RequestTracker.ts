@@ -1,8 +1,7 @@
 import type { IncomingMessage } from "node:http"
-import type { Display } from "./Display.ts"
 import type { Logger } from "./Logger.ts"
 
-export type Stats = {
+export type Stat = {
 	calls: number
 	lastCall: number
 	averageResponseTime: number
@@ -13,20 +12,20 @@ export type OpenRequestData = {
 	url: string
 }
 
-const initialStat = {}
+const initialStat: Stat = { calls: 0, lastCall: 0, averageResponseTime: 0 }
 
 export class RequestTracker {
 	private readonly logger: Logger
 
 	/** Map from path to stats */
-	private _stats: Map<string, Stats> = new Map()
+	private _stats: Map<string, Stat> = new Map()
 
 	/** Map from request uuid to info */
 	private _open: Map<number, OpenRequestData> = new Map()
 
 	private nextID = 1
 
-	constructor(logger: Logger, display: Display) {
+	constructor(logger: Logger) {
 		this.logger = logger
 	}
 
@@ -57,11 +56,15 @@ export class RequestTracker {
 
 		this.logger.log(`Untracking request: ${url}`)
 
-		const stat: Stats = this._stats.get(url) ?? initialStat
+		const { averageResponseTime, calls } = this._stats.get(url) ?? initialStat
+		const responseTime = Date.now() - start
+		const newART = averageResponseTime
+			? (averageResponseTime * calls + responseTime) / (calls + 1)
+			: responseTime
 		this._stats.set(url, {
-			calls: stat.calls + 1,
-			lastCall: stat.lastCall ?? Date.now(),
-			averageResponseTime: 0,
+			calls: calls + 1,
+			lastCall: start,
+			averageResponseTime: newART,
 		})
 	}
 }

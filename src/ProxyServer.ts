@@ -24,7 +24,7 @@ export class ProxyServer {
 		this.display = display
 
 		this.server = createServer(this.requestListener)
-		this.tracker = new RequestTracker(logger, display)
+		this.tracker = new RequestTracker(logger)
 	}
 
 	/** Runs the proxy server; returns after the server has been stopped */
@@ -49,7 +49,7 @@ export class ProxyServer {
 	 * called)
 	 */
 	private requestListener = (req: IncomingMessage, res: ServerResponse) => {
-		if (req.url) this.tracker.track(req.url)
+		const reqID = this.tracker.track(req)
 
 		// re-creates the client request and forwards it to the server
 		const proxyReq = request({
@@ -62,6 +62,8 @@ export class ProxyServer {
 
 		// pipe any data into the request
 		req.pipe(proxyReq)
+
+		req.on("error", () => {})
 
 		// once the client request is finished, end the request so the server will
 		// handle it

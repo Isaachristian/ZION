@@ -1,4 +1,4 @@
-import type { RequestData } from "./RequestTracker.ts"
+import type { OpenRequestData } from "./RequestTracker.ts"
 import type { Config } from "./types/Config.ts"
 
 export class Display {
@@ -6,9 +6,11 @@ export class Display {
 
 	constructor(config: Config) {
 		this.config = config
+
+		this.cycle()
 	}
 
-	public refresh(openRequestList: Map<string, RequestData> = new Map()) {
+	public refresh(openRequestList: Map<string, OpenRequestData> = new Map()) {
 		// clear the terminal window and hide cursor
 		process.stdout.write("\x1b[2J\x1b[0;0H")
 		process.stdout.write("\x1b[?25l")
@@ -52,9 +54,13 @@ export class Display {
 		if (sortedRequests.length < openRequestList.size) {
 			const hidden = openRequestList.size - sortedRequests.length
 			const text = `(${hidden} requests hidden)`
-			const space = " ".repeat(Math.round((w - text.length) / 2))
+			const space = "-".repeat(Math.round((w - text.length) / 2))
 
 			process.stdout.write(`\n\r${space}${text}${space}`.slice(0, w))
 		}
+	}
+
+	private cycle() {
+		setTimeout(() => (this.refresh(), this.cycle()), 1000)
 	}
 }
