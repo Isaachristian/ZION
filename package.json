@@ -5,13 +5,18 @@
 	"main": "src/index.ts",
 	"scripts": {
 		"dev": "nodemon --exec \"node --experimental-strip-types --no-warnings\" src/index.ts --listen-port=8081 --destination-port=5472 --destination-host=localhost --https=false --loglevel=verbose",
+		"dev:node": "node --experimental-strip-types --no-warnings --watch src/index.ts --listen-port=8081 --destination-port=5472 --destination-host=localhost --https=false --loglevel=verbose",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/Isaachristian/MACA.git"
 	},
-	"keywords": ["web", "typescript", "http"],
+	"keywords": [
+		"web",
+		"typescript",
+		"http"
+	],
 	"author": "Isaac Liljeros",
 	"license": "MIT",
 	"bugs": {
@@ -19,7 +24,7 @@
 	},
 	"homepage": "https://github.com/Isaachristian/MACA#readme",
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
+		"@biomejs/biome": "^2.0.0",
 		"@types/node": "^22.15.31",
 		"nodemon": "^3.1.10",
 		"typescript": "^5.8.3"

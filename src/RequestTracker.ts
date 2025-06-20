@@ -1,7 +1,7 @@
 import type { IncomingMessage } from "node:http"
 import type { Logger } from "./Logger.ts"
 
-export type Stat = {
+export type RequestStatistics = {
 	calls: number
 	lastCall: number
 	averageResponseTime: number
@@ -12,13 +12,17 @@ export type OpenRequestData = {
 	url: string
 }
 
-const initialStat: Stat = { calls: 0, lastCall: 0, averageResponseTime: 0 }
+const initialStat: RequestStatistics = {
+	calls: 0,
+	lastCall: 0,
+	averageResponseTime: 0,
+}
 
 export class RequestTracker {
 	private readonly logger: Logger
 
 	/** Map from path to stats */
-	private _stats: Map<string, Stat> = new Map()
+	private _stats: Map<string, RequestStatistics> = new Map()
 
 	/** Map from request uuid to info */
 	private _open: Map<number, OpenRequestData> = new Map()
@@ -66,5 +70,7 @@ export class RequestTracker {
 			lastCall: start,
 			averageResponseTime: newART,
 		})
+
+		this._open.delete(id)
 	}
 }

@@ -1,14 +1,14 @@
 import {
+	createServer,
 	type IncomingMessage,
+	request,
 	type Server,
 	type ServerResponse,
-	createServer,
-	request,
 } from "node:http"
-import type { Config } from "./types/Config.ts"
-import type { Logger } from "./Logger.ts"
 import type { Display } from "./Display.ts"
+import type { Logger } from "./Logger.ts"
 import { RequestTracker } from "./RequestTracker.ts"
+import type { Config } from "./types/Config.ts"
 
 export class ProxyServer {
 	private readonly config: Config
@@ -31,8 +31,6 @@ export class ProxyServer {
 	public run(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			this.server.listen(this.config.listenPort, () => {
-				this.display.refresh()
-
 				process.on("SIGINT", () => {
 					this.logger.info("\n\nGracefully shutting server down...\n\n")
 
@@ -50,6 +48,7 @@ export class ProxyServer {
 	 */
 	private requestListener = (req: IncomingMessage, res: ServerResponse) => {
 		const reqID = this.tracker.track(req)
+		this.display.update(this.tracker.open, this.tracker.stats)
 
 		// re-creates the client request and forwards it to the server
 		const proxyReq = request({
@@ -63,6 +62,7 @@ export class ProxyServer {
 		// pipe any data into the request
 		req.pipe(proxyReq)
 
+		// TODO: Handle error
 		req.on("error", () => {})
 
 		// once the client request is finished, end the request so the server will
@@ -80,11 +80,14 @@ export class ProxyServer {
 
 			proxyRes.pipe(res)
 
+			// TODO: Handle error
+
 			// On response end, finish tracking
 			proxyRes.once("end", () => {
 				res.end()
 
-				if (req.url) this.tracker.untrack(req.url)
+				this.tracker.untrack(reqID)
+				this.display.update(this.tracker.open, this.tracker.stats)
 			})
 		})
 	}

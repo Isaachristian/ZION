@@ -1,19 +1,38 @@
-import type { OpenRequestData } from "./RequestTracker.ts"
+import type { OpenRequestData, RequestStatistics } from "./RequestTracker.ts"
 import type { Config } from "./types/Config.ts"
 
 export class Display {
 	private readonly config: Config
 
+	private openRequests: Map<number, OpenRequestData> = new Map()
+	private requestStats: Map<string, RequestStatistics> = new Map()
+
 	constructor(config: Config) {
 		this.config = config
 
+		process.stdout.write("\x1b[2J\x1b[0;0H")
+
+		this.draw()
 		this.cycle()
+
+		process.once("SIGTERM", () => process.stdout.write("\x1b[?25h"))
+		process.once("SIGINT", () => process.stdout.write("\x1b[?25h"))
 	}
 
-	public refresh(openRequestList: Map<string, OpenRequestData> = new Map()) {
+	public update(
+		openRequests: Map<number, OpenRequestData>,
+		requestStats: Map<string, RequestStatistics>,
+	) {
+		this.openRequests = openRequests
+		this.requestStats = requestStats
+
+		this.draw()
+	}
+
+	private draw() {
 		// clear the terminal window and hide cursor
-		process.stdout.write("\x1b[2J\x1b[0;0H")
-		process.stdout.write("\x1b[?25l")
+		process.stdout.write("\u001b[1;1H") // reset to top left
+		process.stdout.write("\x1b[?25l") // hide cursor
 
 		const w = process.stdout.columns
 		const h = process.stdout.rows
@@ -40,19 +59,18 @@ export class Display {
 			`${title}${" ".repeat(w - title.length - total.length)}${total}`,
 		)
 
-		const sortedRequests = [...openRequestList]
-			.sort((a, b) => b[1].lastCall - a[1].lastCall)
-			.sort((a, b) => b[1].ongoing - a[1].ongoing)
+		const sortedRequests = [...this.openRequests]
+			.sort((a, b) => b[1].start - a[1].start)
 			.slice(0, h - 4)
 
-		for (const [url, { ongoing, calls }] of sortedRequests) {
-			process.stdout.write(ongoing > 0 ? "\x1b[31m" : "\x1b[32m") // Set red
-			process.stdout.write(`\n\r - (${ongoing} | ${calls}) ${url}`.slice(0, w))
+		for (const [id, { start, url }] of sortedRequests) {
+			process.stdout.write("\x1b[31m") // Set red
+			process.stdout.write(`\n\r - (${id}) ${url}`.slice(0, w))
 			process.stdout.write("\x1b[0m") // Set default
 		}
 
-		if (sortedRequests.length < openRequestList.size) {
-			const hidden = openRequestList.size - sortedRequests.length
+		if (sortedRequests.length < this.openRequests.size) {
+			const hidden = this.openRequests.size - sortedRequests.length
 			const text = `(${hidden} requests hidden)`
 			const space = "-".repeat(Math.round((w - text.length) / 2))
 
@@ -61,6 +79,6 @@ export class Display {
 	}
 
 	private cycle() {
-		setTimeout(() => (this.refresh(), this.cycle()), 1000)
+		setTimeout(() => (this.draw(), this.cycle()), 1000)
 	}
 }
