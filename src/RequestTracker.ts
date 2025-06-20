@@ -57,6 +57,7 @@ export class RequestTracker {
 		}
 
 		const { start, url } = req
+		const key = url?.replaceAll(/([0-9])/g, "#") || ""
 
 		this.logger.log(`Untracking request: ${url}`)
 
@@ -65,7 +66,7 @@ export class RequestTracker {
 		const newART = averageResponseTime
 			? (averageResponseTime * calls + responseTime) / (calls + 1)
 			: responseTime
-		this._stats.set(url, {
+		this._stats.set(key, {
 			calls: calls + 1,
 			lastCall: start,
 			averageResponseTime: newART,

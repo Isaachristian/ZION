@@ -47,7 +47,17 @@ export class ProxyServer {
 	 * called)
 	 */
 	private requestListener = (req: IncomingMessage, res: ServerResponse) => {
-		const reqID = this.tracker.track(req)
+		const notFile = ![
+			".ts",
+			".js",
+			".mjs",
+			".pcss",
+			".css",
+			".svelte",
+			".svg",
+		].some((e) => req?.url?.endsWith(e))
+		const reqID = notFile ? this.tracker.track(req) : 0
+		// const reqID = this.tracker.track(req)
 		this.display.update(this.tracker.open, this.tracker.stats)
 
 		// re-creates the client request and forwards it to the server

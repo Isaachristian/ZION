@@ -5,16 +5,21 @@ export class Display {
 	private readonly config: Config
 
 	private openRequests: Map<number, OpenRequestData> = new Map()
+	private sortedOngoingRequests: [number, OpenRequestData][] = []
 	private requestStats: Map<string, RequestStatistics> = new Map()
+	private sortedRequestStats: [string, RequestStatistics][] = []
 
 	constructor(config: Config) {
 		this.config = config
 
 		process.stdout.write("\x1b[2J\x1b[0;0H")
+		process.stdout.write("\x1b[?25l") // hide cursor
 
 		this.draw()
-		this.cycle()
 
+		this.autoRefresh()
+
+		// show cursor on exit
 		process.once("SIGTERM", () => process.stdout.write("\x1b[?25h"))
 		process.once("SIGINT", () => process.stdout.write("\x1b[?25h"))
 	}
@@ -24,7 +29,14 @@ export class Display {
 		requestStats: Map<string, RequestStatistics>,
 	) {
 		this.openRequests = openRequests
+		this.sortedOngoingRequests = [...this.openRequests].sort(
+			(a, b) => b[1].start - a[1].start,
+		)
+
 		this.requestStats = requestStats
+		this.sortedRequestStats = [...this.requestStats].sort(
+			(a, b) => b[1].averageResponseTime - a[1].averageResponseTime,
+		)
 
 		this.draw()
 	}
@@ -32,53 +44,143 @@ export class Display {
 	private draw() {
 		// clear the terminal window and hide cursor
 		process.stdout.write("\u001b[1;1H") // reset to top left
-		process.stdout.write("\x1b[?25l") // hide cursor
+
+		const write = (s: string, level: 1 | 2 | null = null, centered = false) => {
+			if (centered) {
+				const padding = " ".repeat(Math.max(0, Math.ceil((w - s.length) / 2)))
+				s = `${padding}${s}${padding}`
+			}
+
+			if (level === 1) process.stdout.write("\u001b[30m\u001b[46m")
+			if (level === 2) process.stdout.write("\u001b[30m\u001b[47m")
+
+			if (s.length > w) process.stdout.write(s.slice(0, w))
+			if (s.length <= w) process.stdout.write(s + " ".repeat(w - s.length))
+
+			process.stdout.write("\u001b[0m")
+		}
 
 		const w = process.stdout.columns
 		const h = process.stdout.rows
 
-		// top status bar
-		const {
-			listenPort: lp,
-			destinationHost: dh,
-			destinationPort: dp,
-		} = this.config
-		const runningMsg = `Server Running: localhost:${lp} -> ${dh}:${dp}`
-		const lastUpdate = `Last Update: ${new Date().toLocaleString()}`
-		const spacingLen = w - runningMsg.length - lastUpdate.length
-		process.stdout.write(
-			`${runningMsg}${" ".repeat(spacingLen)}${lastUpdate}`.slice(0, w),
-		)
+		for (let row = 1; row <= h; row++) {
+			switch (true) {
+				// top status bar
+				case row === 1: {
+					const {
+						listenPort: lp,
+						destinationHost: dh,
+						destinationPort: dp,
+					} = this.config
+					const runningMsg = `Server Running: localhost:${lp} -> ${dh}:${dp}`
+					const lastUpdate = `${new Date().toLocaleString()}`
+					const spacing = " ".repeat(w - runningMsg.length - lastUpdate.length)
+					write(`${runningMsg}${spacing}${lastUpdate}`, 1)
 
-		process.stdout.write(" \n")
+					break
+				}
 
-		// Ongoing Requests
-		const title = "Ongoing Requests"
-		const total = `${0} Total`
-		process.stdout.write(
-			`${title}${" ".repeat(w - title.length - total.length)}${total}`,
-		)
+				// ongoing requests header
+				case row === 2: {
+					const title = `Ongoing Requests (${this.openRequests.size})`
+					write(`${title}`.slice(0, w), 2, true)
 
-		const sortedRequests = [...this.openRequests]
-			.sort((a, b) => b[1].start - a[1].start)
-			.slice(0, h - 4)
+					break
+				}
 
-		for (const [id, { start, url }] of sortedRequests) {
-			process.stdout.write("\x1b[31m") // Set red
-			process.stdout.write(`\n\r - (${id}) ${url}`.slice(0, w))
-			process.stdout.write("\x1b[0m") // Set default
-		}
+				// ongoing requests
+				case row >= 3 && row <= 8: {
+					const request = this.sortedOngoingRequests.at(row - 3)
 
-		if (sortedRequests.length < this.openRequests.size) {
-			const hidden = this.openRequests.size - sortedRequests.length
-			const text = `(${hidden} requests hidden)`
-			const space = "-".repeat(Math.round((w - text.length) / 2))
+					if (!request) {
+						write("")
+						break
+					}
 
-			process.stdout.write(`\n\r${space}${text}${space}`.slice(0, w))
+					const [id, { url, start }] = request
+					const paddedId = id.toString().padStart(5, "0")
+					const duration = this.getDuration(start)
+					write(`${paddedId} - ${url} (${duration})`)
+
+					break
+				}
+
+				case row === 9: {
+					if (this.sortedOngoingRequests.length <= 6) {
+						write("")
+						break
+					}
+
+					write(`${this.sortedOngoingRequests.length - 6} hidden`, null, true)
+
+					break
+				}
+
+				case row === 10: {
+					const title = ` Request Statistics (${this.requestStats.size}) `
+					write(`${title}`, 2, true)
+
+					break
+				}
+
+				case row >= 11 && row <= h - 1: {
+					const request = this.sortedRequestStats.at(row - 11)
+
+					if (!request) {
+						write("")
+						break
+					}
+
+					const [url, { averageResponseTime: art, calls, lastCall }] = request
+					write(`${art.toFixed(0).padStart(6, " ")} ms - ${url}`)
+
+					break
+				}
+
+				case row === h: {
+					if (this.sortedRequestStats.length <= h - 11) {
+						write("")
+						break
+					}
+
+					write(`${this.sortedRequestStats.length - 6} hidden`, null, true)
+
+					break
+				}
+
+				default: {
+					write(``)
+					break
+				}
+			}
 		}
 	}
 
-	private cycle() {
-		setTimeout(() => (this.draw(), this.cycle()), 1000)
+	private autoRefresh() {
+		setTimeout(() => {
+			this.draw()
+			this.autoRefresh()
+		}, 1000)
+	}
+
+	private getSortedOngoingRequests() {
+		return [...this.openRequests].sort((a, b) => b[1].start - a[1].start)
+	}
+
+	private getSortedRequestStats() {
+		return [...this.requestStats].sort(
+			(a, b) => b[1].averageResponseTime - a[1].averageResponseTime,
+		)
+	}
+
+	private getDuration(start: number, end: number = Date.now()) {
+		const sec = Math.round((end - start) / 1_000)
+		const min = Math.floor(sec / 60)
+		const hrs = Math.floor(min / 60)
+
+		if (hrs > 0) return `${hrs}h ${min}m ${sec % 60}s`
+		if (min > 0) return `${min}m ${sec % 60}s`
+
+		return `${sec % 60}s`
 	}
 }
