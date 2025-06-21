@@ -1,9 +1,9 @@
 import { exit } from "node:process"
-import { ProxyServer } from "./ProxyServer.ts"
-import { WebServer } from "./WebServer.ts"
-import { parseConfig } from "./utils/parseConfig.ts"
-import { Logger } from "./Logger.ts"
 import { Display } from "./Display.ts"
+import { Logger } from "./Logger.ts"
+import { ProxyServer } from "./ProxyServer.ts"
+import { parseConfig } from "./utils/parseConfig.ts"
+import { WebServer } from "./WebServer.ts"
 
 async function main(argv: string[]) {
 	const config = parseConfig(argv)

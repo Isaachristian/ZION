@@ -72,7 +72,7 @@ export class Display {
 						destinationHost: dh,
 						destinationPort: dp,
 					} = this.config
-					const runningMsg = `Server Running: localhost:${lp} -> ${dh}:${dp}`
+					const runningMsg = `localhost:${lp} -> ${dh}:${dp}`
 					const lastUpdate = `${new Date().toLocaleString()}`
 					const spacing = " ".repeat(w - runningMsg.length - lastUpdate.length)
 					write(`${runningMsg}${spacing}${lastUpdate}`, 1)
@@ -117,22 +117,31 @@ export class Display {
 				}
 
 				case row === 10: {
-					const title = ` Request Statistics (${this.requestStats.size}) `
+					const title = `Request Statistics (${this.requestStats.size})`
 					write(`${title}`, 2, true)
 
 					break
 				}
 
-				case row >= 11 && row <= h - 1: {
-					const request = this.sortedRequestStats.at(row - 11)
+				case row === 11: {
+					const title = ` Ave. Time | Calls | URL `
+					write(`${title}`, 2, false)
+
+					break
+				}
+
+				case row >= 12 && row <= h - 1: {
+					const request = this.sortedRequestStats.at(row - 12)
 
 					if (!request) {
 						write("")
 						break
 					}
 
-					const [url, { averageResponseTime: art, calls, lastCall }] = request
-					write(`${art.toFixed(0).padStart(6, " ")} ms - ${url}`)
+					const [url, { averageResponseTime, calls }] = request
+					const a = averageResponseTime.toFixed(0).padStart(6, " ").slice(0, 6)
+					const callsP = calls.toFixed(0).padStart(5, " ").slice(0, 5)
+					write(` ${a} ms | ${callsP} | ${url}`)
 
 					break
 				}

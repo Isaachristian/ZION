@@ -12,19 +12,21 @@ import type { Config } from "./types/Config.ts"
 
 export class ProxyServer {
 	private readonly config: Config
+
+	// utilities
 	private readonly logger: Logger
 	private readonly display: Display
-
-	private readonly server: Server
 	private readonly tracker: RequestTracker
+
+	// state
+	private readonly server: Server
 
 	constructor(config: Config, logger: Logger, display: Display) {
 		this.config = config
 		this.logger = logger
 		this.display = display
-
+		this.tracker = new RequestTracker(this.logger)
 		this.server = createServer(this.requestListener)
-		this.tracker = new RequestTracker(logger)
 	}
 
 	/** Runs the proxy server; returns after the server has been stopped */
@@ -47,17 +49,17 @@ export class ProxyServer {
 	 * called)
 	 */
 	private requestListener = (req: IncomingMessage, res: ServerResponse) => {
-		const notFile = ![
-			".ts",
-			".js",
-			".mjs",
-			".pcss",
-			".css",
-			".svelte",
-			".svg",
-		].some((e) => req?.url?.endsWith(e))
-		const reqID = notFile ? this.tracker.track(req) : 0
-		// const reqID = this.tracker.track(req)
+		// const notFile = ![
+		// 	".ts",
+		// 	".js",
+		// 	".mjs",
+		// 	".pcss",
+		// 	".css",
+		// 	".svelte",
+		// 	".svg",
+		// ].some((e) => req?.url?.endsWith(e))
+		// const reqID = notFile ? this.tracker.track(req) : 0
+		const reqID = this.tracker.track(req)
 		this.display.update(this.tracker.open, this.tracker.stats)
 
 		// re-creates the client request and forwards it to the server
